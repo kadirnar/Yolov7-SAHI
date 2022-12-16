@@ -22,8 +22,7 @@ class Yolov7PipDetectionModel(DetectionModel):
             self.model = model
         except ImportError:
             raise ImportError(
-                'Please run "pip install -r https://raw.githubusercontent.com/WongKinYiu/yolov7/main/requirements.txt" '
-                "to install Yolov7 first for Yolov7 inference."
+                "Please run 'pip install yolov7detect' to install Yolov7 first for Yolov7 inference."
             )
         except Exception as e:
             TypeError("model_path is not a valid torchvision model path: ", e)
