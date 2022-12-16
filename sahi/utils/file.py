@@ -97,7 +97,7 @@ def list_files(
 
     for file in os.listdir(directory):
         # check if filename contains any of the terms given in contains list
-        if any(strtocheck in file for strtocheck in contains):
+        if any(strtocheck in file.lower() for strtocheck in contains):
             filepath = os.path.join(directory, file)
             filepath_list.append(filepath)
 
@@ -140,7 +140,7 @@ def list_files_recursively(directory: str, contains: list = [".json"], verbose: 
     for r, _, f in os.walk(directory):
         for file in f:
             # check if filename contains any of the terms given in contains list
-            if any(strtocheck in file for strtocheck in contains):
+            if any(strtocheck in file.lower() for strtocheck in contains):
                 abs_filepath = os.path.join(r, file)
                 abs_filepath_list.append(abs_filepath)
                 relative_filepath = abs_filepath.split(directory)[-1]
@@ -195,17 +195,19 @@ def save_pickle(data, save_path):
         pickle.dump(data, outfile)
 
 
-def import_model_class(class_name):
+def import_model_class(model_type, class_name):
     """
     Imports a predefined detection class by class name.
 
     Args:
+        model_type: str
+            "yolov5", "detectron2", "mmdet", "huggingface" etc
         model_name: str
             Name of the detection model class (example: "MmdetDetectionModel")
     Returns:
         class_: class with given path
     """
-    module = __import__("sahi.model", fromlist=[class_name])
+    module = __import__(f"sahi.models.{model_type}", fromlist=[class_name])
     class_ = getattr(module, class_name)
     return class_
 

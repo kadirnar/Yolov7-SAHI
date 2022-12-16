@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 from PIL import Image
 
-from sahi.slicing import slice_coco, slice_image
+from sahi.slicing import shift_bboxes, shift_masks, slice_coco, slice_image
 from sahi.utils.coco import Coco
 from sahi.utils.cv import read_image
 
@@ -34,6 +34,7 @@ class TestSlicing(unittest.TestCase):
             verbose=False,
         )
 
+        self.assertEqual(len(slice_image_result), 18)
         self.assertEqual(len(slice_image_result.images), 18)
         self.assertEqual(len(slice_image_result.coco_images), 18)
         self.assertEqual(slice_image_result.coco_images[0].annotations, [])
@@ -42,6 +43,11 @@ class TestSlicing(unittest.TestCase):
             slice_image_result.coco_images[15].annotations[1].bbox,
             [17, 186, 48, 152],
         )
+        self.assertEqual(type(slice_image_result[0]), dict)
+        self.assertEqual(slice_image_result[0]["image"].shape, (512, 512, 3))
+        self.assertEqual(slice_image_result[3]["starting_pixel"], [924, 0])
+        self.assertEqual(type(slice_image_result[0:4]), list)
+        self.assertEqual(len(slice_image_result[0:4]), 4)
 
         image_cv = read_image(image_path)
         slice_image_result = slice_image(
@@ -163,6 +169,35 @@ class TestSlicing(unittest.TestCase):
         )
 
         shutil.rmtree(output_dir, ignore_errors=True)
+
+    def test_shift_bboxes(self):
+        import torch
+
+        bboxes = [[1, 2, 3, 4]]
+        shift_x = 10
+        shift_y = 20
+        shifted_bboxes = shift_bboxes(bboxes=bboxes, offset=[shift_x, shift_y])
+        self.assertEqual(shifted_bboxes, [[11, 22, 13, 24]])
+        self.assertEqual(type(shifted_bboxes), list)
+
+        bboxes = np.array([[1, 2, 3, 4]])
+        shifted_bboxes = shift_bboxes(bboxes=bboxes, offset=[shift_x, shift_y])
+        self.assertEqual(shifted_bboxes.tolist(), [[11, 22, 13, 24]])
+        self.assertEqual(type(shifted_bboxes), np.ndarray)
+
+        bboxes = torch.tensor([[1, 2, 3, 4]])
+        shifted_bboxes = shift_bboxes(bboxes=bboxes, offset=[shift_x, shift_y])
+        self.assertEqual(shifted_bboxes.tolist(), [[11, 22, 13, 24]])
+        self.assertEqual(type(shifted_bboxes), torch.Tensor)
+
+    def test_shift_masks(self):
+        masks = np.zeros((3, 30, 30), dtype=np.bool)
+        shift_x = 10
+        shift_y = 20
+        full_shape = [720, 1280]
+        shifted_masks = shift_masks(masks=masks, offset=[shift_x, shift_y], full_shape=full_shape)
+        self.assertEqual(shifted_masks.shape, (3, 720, 1280))
+        self.assertEqual(type(shifted_masks), np.ndarray)
 
 
 if __name__ == "__main__":

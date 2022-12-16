@@ -19,7 +19,7 @@ if sys.version_info >= (3, 7):
 
     class TestHuggingfaceDetectionModel(unittest.TestCase):
         def test_load_model(self):
-            from sahi.model import HuggingfaceDetectionModel
+            from sahi.models.huggingface import HuggingfaceDetectionModel
 
             huggingface_detection_model = HuggingfaceDetectionModel(
                 model_path=HuggingfaceTestConstants.YOLOS_TINY_MODEL_PATH,
@@ -34,7 +34,7 @@ if sys.version_info >= (3, 7):
         def test_set_model(self):
             from transformers import AutoFeatureExtractor, AutoModelForObjectDetection
 
-            from sahi.model import HuggingfaceDetectionModel
+            from sahi.models.huggingface import HuggingfaceDetectionModel
 
             huggingface_model = AutoModelForObjectDetection.from_pretrained(
                 HuggingfaceTestConstants.YOLOS_TINY_MODEL_PATH
@@ -55,7 +55,7 @@ if sys.version_info >= (3, 7):
             self.assertNotEqual(huggingface_detection_model.model, None)
 
         def test_perform_inference(self):
-            from sahi.model import HuggingfaceDetectionModel
+            from sahi.models.huggingface import HuggingfaceDetectionModel
 
             huggingface_detection_model = HuggingfaceDetectionModel(
                 model_path=HuggingfaceTestConstants.YOLOS_TINY_MODEL_PATH,
@@ -104,7 +104,7 @@ if sys.version_info >= (3, 7):
                 self.assertGreaterEqual(score.item(), CONFIDENCE_THRESHOLD)
 
         def test_convert_original_predictions(self):
-            from sahi.model import HuggingfaceDetectionModel
+            from sahi.models.huggingface import HuggingfaceDetectionModel
 
             huggingface_detection_model = HuggingfaceDetectionModel(
                 model_path=HuggingfaceTestConstants.YOLOS_TINY_MODEL_PATH,
@@ -131,14 +131,14 @@ if sys.version_info >= (3, 7):
             self.assertEqual(object_prediction_list[0].category.id, 3)
             self.assertEqual(object_prediction_list[0].category.name, "car")
             desired_bbox = [639, 198, 24, 20]
-            predicted_bbox = object_prediction_list[0].bbox.to_coco_bbox()
+            predicted_bbox = object_prediction_list[0].bbox.to_xywh()
             margin = 2
             for ind, point in enumerate(predicted_bbox):
                 assert point < desired_bbox[ind] + margin and point > desired_bbox[ind] - margin
             self.assertEqual(object_prediction_list[2].category.id, 3)
             self.assertEqual(object_prediction_list[2].category.name, "car")
             desired_bbox = [745, 169, 15, 14]
-            predicted_bbox = object_prediction_list[2].bbox.to_coco_bbox()
+            predicted_bbox = object_prediction_list[2].bbox.to_xywh()
             for ind, point in enumerate(predicted_bbox):
                 assert point < desired_bbox[ind] + margin and point > desired_bbox[ind] - margin
 
@@ -146,7 +146,7 @@ if sys.version_info >= (3, 7):
                 self.assertGreaterEqual(object_prediction.score.value, CONFIDENCE_THRESHOLD)
 
         def test_get_prediction_huggingface(self):
-            from sahi.model import HuggingfaceDetectionModel
+            from sahi.models.huggingface import HuggingfaceDetectionModel
             from sahi.predict import get_prediction
             from sahi.utils.huggingface import HuggingfaceTestConstants
 
@@ -233,7 +233,7 @@ if sys.version_info >= (3, 7):
             self.assertEqual(num_car, 27)
 
         def test_get_sliced_prediction_huggingface(self):
-            from sahi.model import HuggingfaceDetectionModel
+            from sahi.models.huggingface import HuggingfaceDetectionModel
             from sahi.predict import get_sliced_prediction
             from sahi.utils.huggingface import HuggingfaceTestConstants
 
@@ -276,7 +276,7 @@ if sys.version_info >= (3, 7):
             object_prediction_list = prediction_result.object_prediction_list
 
             # compare
-            self.assertEqual(len(object_prediction_list), 53)
+            self.assertEqual(len(object_prediction_list), 54)
             num_person = num_truck = num_car = 0
             for object_prediction in object_prediction_list:
                 if object_prediction.category.name == "person":
@@ -287,7 +287,7 @@ if sys.version_info >= (3, 7):
                     num_car += 1
             self.assertEqual(num_person, 0)
             self.assertEqual(num_truck, 5)
-            self.assertEqual(num_car, 48)
+            self.assertEqual(num_car, 49)
 
 
 if __name__ == "__main__":

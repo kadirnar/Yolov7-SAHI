@@ -6,13 +6,14 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from PIL import Image
 from shapely.errors import TopologicalError
 from tqdm import tqdm
 
+from sahi.annotation import BoundingBox, Mask
 from sahi.utils.coco import Coco, CocoAnnotation, CocoImage, create_coco_dict
 from sahi.utils.cv import read_image_as_pil
 from sahi.utils.file import load_json, save_json
@@ -69,11 +70,6 @@ def get_slice_bboxes(
         y_overlap = int(overlap_height_ratio * slice_height)
         x_overlap = int(overlap_width_ratio * slice_width)
     elif auto_slice_resolution:
-        logger.warning(
-            "Starting from version `0.10.2`, `auto_slice_resolution=True` is introduced as "
-            "the default behavior for determining slice height and width automatically "
-            "calculated by the image properties (resolution, aspect ratio and orientation)."
-        )
         x_overlap, y_overlap, slice_width, slice_height = get_auto_slice_params(height=image_height, width=image_width)
     else:
         raise ValueError("Compute type is not auto and slice width and height are not provided.")
@@ -235,6 +231,29 @@ class SliceImageResult:
         for sliced_image in self._sliced_image_list:
             filenames.append(sliced_image.coco_image.file_name)
         return filenames
+
+    def __getitem__(self, i):
+        def _prepare_ith_dict(i):
+            return {
+                "image": self.images[i],
+                "coco_image": self.coco_images[i],
+                "starting_pixel": self.starting_pixels[i],
+                "filename": self.filenames[i],
+            }
+
+        if isinstance(i, np.ndarray):
+            i = i.tolist()
+
+        if isinstance(i, int):
+            return _prepare_ith_dict(i)
+        elif isinstance(i, slice):
+            start, stop, step = i.indices(len(self))
+            return [_prepare_ith_dict(i) for i in range(start, stop, step)]
+        elif isinstance(i, (tuple, list)):
+            accessed_mapping = map(_prepare_ith_dict, i)
+            return list(accessed_mapping)
+        else:
+            raise NotImplementedError(f"{type(i)}")
 
     def __len__(self):
         return len(self._sliced_image_list)
@@ -624,3 +643,60 @@ def get_auto_slice_params(height: int, width: int):
         return get_resolution_selector("high", height=height, width=width)
     else:
         return get_resolution_selector("ultra-high", height=height, width=width)
+
+
+def shift_bboxes(bboxes, offset: Sequence[int]):
+    """
+    Shift bboxes w.r.t offset.
+
+    Suppo
+
+    Args:
+        bboxes (Tensor, np.ndarray, list): The bboxes need to be translated. Its shape can
+            be (n, 4), which means (x, y, x, y).
+        offset (Sequence[int]): The translation offsets with shape of (2, ).
+    Returns:
+        Tensor, np.ndarray, list: Shifted bboxes.
+    """
+    shifted_bboxes = []
+
+    if type(bboxes).__module__ == "torch":
+        bboxes_is_torch_tensor = True
+    else:
+        bboxes_is_torch_tensor = False
+
+    for bbox in bboxes:
+        if bboxes_is_torch_tensor or isinstance(bbox, np.ndarray):
+            bbox = bbox.tolist()
+        bbox = BoundingBox(bbox, shift_amount=offset)
+        bbox = bbox.get_shifted_box()
+        shifted_bboxes.append(bbox.to_xyxy())
+
+    if isinstance(bboxes, np.ndarray):
+        return np.stack(shifted_bboxes, axis=0)
+    elif bboxes_is_torch_tensor:
+        return bboxes.new_tensor(shifted_bboxes)
+    else:
+        return shifted_bboxes
+
+
+def shift_masks(masks: np.ndarray, offset: Sequence[int], full_shape: Sequence[int]) -> np.ndarray:
+    """Shift masks to the original image.
+    Args:
+        masks (np.ndarray): masks that need to be shifted.
+        offset (Sequence[int]): The offset to translate with shape of (2, ).
+        full_shape (Sequence[int]): A (height, width) tuple of the huge image's shape.
+    Returns:
+        np.ndarray: Shifted masks.
+    """
+    # empty masks
+    if masks is None:
+        return masks
+
+    shifted_masks = []
+    for mask in masks:
+        mask = Mask(bool_mask=mask, shift_amount=offset, full_shape=full_shape)
+        mask = mask.get_shifted_mask()
+        shifted_masks.append(mask.bool_mask)
+
+    return np.stack(shifted_masks, axis=0)
