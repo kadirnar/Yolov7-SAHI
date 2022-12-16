@@ -1,4 +1,3 @@
-import contextlib
 import importlib.util
 import logging
 import os
@@ -48,9 +47,7 @@ def print_enviroment_info():
     _detectron2_available, _detectron2_version = get_package_info("detectron2")
     _transformers_available, _transformers_version = get_package_info("transformers")
     _timm_available, _timm_version = get_package_info("timm")
-    _layer_available, _layer_version = get_package_info("layer")
     _fiftyone_available, _fiftyone_version = get_package_info("fiftyone")
-    _norfair_available, _norfair_version = get_package_info("norfair")
 
 
 def is_available(module_name: str):
@@ -67,4 +64,42 @@ def check_requirements(package_names):
             missing_packages.append(package_name)
     if missing_packages:
         raise ImportError(f"The following packages are required to use this module: {missing_packages}")
+    yield
+
+
+def check_package_minimum_version(package_name: str, minimum_version: str, verbose=False):
+    """
+    Raise error if module version is not compatible.
+    """
+    from packaging import version
+
+    _is_available, _version = get_package_info(package_name, verbose=verbose)
+    if _is_available:
+        if _version == "unknown":
+            logger.warning(
+                f"Could not determine version of {package_name}. Assuming version {minimum_version} is compatible."
+            )
+        else:
+            if version.parse(_version) < version.parse(minimum_version):
+                return False
+    return True
+
+
+def ensure_package_minimum_version(package_name: str, minimum_version: str, verbose=False):
+    """
+    Raise error if module version is not compatible.
+    """
+    from packaging import version
+
+    _is_available, _version = get_package_info(package_name, verbose=verbose)
+    if _is_available:
+        if _version == "unknown":
+            logger.warning(
+                f"Could not determine version of {package_name}. Assuming version {minimum_version} is compatible."
+            )
+        else:
+            if version.parse(_version) < version.parse(minimum_version):
+                raise ImportError(
+                    f"Please upgrade {package_name} to version {minimum_version} or higher to use this module."
+                )
     yield

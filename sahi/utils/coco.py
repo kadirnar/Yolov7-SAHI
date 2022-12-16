@@ -208,7 +208,6 @@ class CocoAnnotation:
             raise ValueError("you must provide a bbox or polygon")
 
         self._segmentation = segmentation
-        bbox = [round(point) for point in bbox] if bbox else bbox
         self._category_id = category_id
         self._category_name = category_name
         self._image_id = image_id
@@ -242,7 +241,7 @@ class CocoAnnotation:
         """
         Returns coco formatted bbox of the annotation as [xmin, ymin, width, height]
         """
-        return self._shapely_annotation.to_coco_bbox()
+        return self._shapely_annotation.to_xywh()
 
     @property
     def segmentation(self):
@@ -1490,7 +1489,7 @@ class Coco:
                 ann_dict: Dict = coco_ann.json
                 if annotation_inside_slice(annotation=ann_dict, slice_bbox=img_dims):
                     shapely_ann = coco_ann.get_sliced_coco_annotation(img_dims)
-                    bbox = ShapelyAnnotation.to_coco_bbox(shapely_ann._shapely_annotation)
+                    bbox = ShapelyAnnotation.to_xywh(shapely_ann._shapely_annotation)
                     coco_ann_from_shapely = CocoAnnotation(
                         bbox=bbox,
                         category_id=coco_ann.category_id,
@@ -1875,7 +1874,7 @@ def create_coco_dict(images, categories, ignore_negative_samples=False, image_id
     """
     # assertion of parameters
     if image_id_setting not in ["auto", "manual"]:
-        raise ValueError(f"'image_id_setting' should be one of ['auto', 'manual']")
+        raise ValueError("'image_id_setting' should be one of ['auto', 'manual']")
 
     # define accumulators
     image_index = 1
@@ -1948,7 +1947,7 @@ def create_coco_prediction_array(images, ignore_negative_samples=False, image_id
     """
     # assertion of parameters
     if image_id_setting not in ["auto", "manual"]:
-        raise ValueError(f"'image_id_setting' should be one of ['auto', 'manual']")
+        raise ValueError("'image_id_setting' should be one of ['auto', 'manual']")
     # define accumulators
     image_index = 1
     prediction_id = 1
@@ -2024,10 +2023,10 @@ def add_bbox_and_area_to_coco(
                 ]
             )
             x, y, width, height = (
-                round(minx),
-                round(miny),
-                round(maxx - minx),
-                round(maxy - miny),
+                minx,
+                miny,
+                maxx - minx,
+                maxy - miny,
             )
             annotations[ind]["bbox"] = [x, y, width, height]
 

@@ -15,7 +15,7 @@ IMAGE_SIZE = 320
 
 class TestYolov5DetectionModel(unittest.TestCase):
     def test_load_model(self):
-        from sahi.model import Yolov5DetectionModel
+        from sahi.models.yolov5 import Yolov5DetectionModel
 
         download_yolov5n_model()
 
@@ -32,7 +32,7 @@ class TestYolov5DetectionModel(unittest.TestCase):
     def test_set_model(self):
         import yolov5
 
-        from sahi.model import Yolov5DetectionModel
+        from sahi.models.yolov5 import Yolov5DetectionModel
 
         download_yolov5n_model()
 
@@ -49,7 +49,7 @@ class TestYolov5DetectionModel(unittest.TestCase):
         self.assertNotEqual(yolov5_detection_model.model, None)
 
     def test_perform_inference(self):
-        from sahi.model import Yolov5DetectionModel
+        from sahi.models.yolov5 import Yolov5DetectionModel
 
         # init model
         download_yolov5n_model()
@@ -90,7 +90,7 @@ class TestYolov5DetectionModel(unittest.TestCase):
             self.assertGreaterEqual(box[4].item(), CONFIDENCE_THRESHOLD)
 
     def test_convert_original_predictions(self):
-        from sahi.model import Yolov5DetectionModel
+        from sahi.models.yolov5 import Yolov5DetectionModel
 
         # init model
         download_yolov5n_model()
@@ -120,14 +120,14 @@ class TestYolov5DetectionModel(unittest.TestCase):
         self.assertEqual(object_prediction_list[0].category.id, 2)
         self.assertEqual(object_prediction_list[0].category.name, "car")
         desired_bbox = [321, 329, 57, 39]
-        predicted_bbox = object_prediction_list[0].bbox.to_coco_bbox()
+        predicted_bbox = object_prediction_list[0].bbox.to_xywh()
         margin = 2
         for ind, point in enumerate(predicted_bbox):
             assert point < desired_bbox[ind] + margin and point > desired_bbox[ind] - margin
         self.assertEqual(object_prediction_list[2].category.id, 2)
         self.assertEqual(object_prediction_list[2].category.name, "car")
         desired_bbox = [381, 275, 42, 28]
-        predicted_bbox = object_prediction_list[2].bbox.to_coco_bbox()
+        predicted_bbox = object_prediction_list[2].bbox.to_xywh()
         for ind, point in enumerate(predicted_bbox):
             assert point < desired_bbox[ind] + margin and point > desired_bbox[ind] - margin
 
