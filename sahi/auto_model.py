@@ -10,6 +10,7 @@ MODEL_TYPE_TO_MODEL_CLASS_NAME = {
     "torchvision": "TorchVisionDetectionModel",
     "yolov7hub": "Yolov7HubDetectionModel",
     "yolov7pip": "Yolov7PipDetectionModel",
+    "tensorflowhub": "TensorflowHubDetectionModel",
 }
 
 
